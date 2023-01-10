@@ -24,19 +24,50 @@ jobs:
         uses: golangci/golangci-lint-action@v3.3.1
 
   testing:
-    needs: linting
     runs-on: ubuntu-latest
     steps:
       - name: Checkout master
         uses: actions/checkout@v2
 
-      - name: Run Tests
-        run: go test ./...
-
       - name: Set up Go 1.19.4
         uses: actions/setup-go@v2
         with:
           go-version: 1.19.4
+
+      - name: Setup GO environment
+        run: |
+          go mod download
+
+      - name: Vet
+        run: |
+          go vet ./...
+
+      - name: Unit tests
+        run: |
+          sudo go test ./... -coverprofile coverage.out -covermode count
+          sudo go tool cover -func coverage.out
+
+      - name: Test coverage shall be above threshold
+        env:
+          TEST_COVERAGE_THRESHOLD: 0
+        run: |
+          echo "Quality Gate: checking test coverage is above threshold ..."
+          echo "Threshold             : $TEST_COVERAGE_THRESHOLD %"
+          totalCoverage=`go tool cover -func=coverage.out | grep total | grep -Eo '[0-9]+\.[0-9]+'`
+          echo "Current test coverage : $totalCoverage %"
+          if (( $(echo "$totalCoverage $TEST_COVERAGE_THRESHOLD" | awk '{print ($1 >= $2)}') )); then
+              echo "OK"
+          else
+              echo "Current test coverage is below threshold. Please add more unit tests or adjust threshold to a lower value."
+              echo "Failed"
+              exit 1
+          fi
+
+      - name: Test Coverage
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
   building:
     runs-on: ubuntu-latest
     steps:
@@ -47,3 +78,10 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: 1.19.4
+
+      - name: Setup GO environment
+        run: |
+          go mod download
+
+      - name: Build
+        run: go build -o ./.bin/simple-template cmd/app/main.go
