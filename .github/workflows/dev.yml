@@ -1,0 +1,49 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  REGISTRY: "onmono.com/template"
+  IMAGE_NAME: "template"
+  CONTAINER_NAME: "template"
+
+jobs:
+  linting:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v2
+
+      - name: Run Linters golangci-lint
+        uses: golangci/golangci-lint-action@v3.3.1
+
+  testing:
+    needs: linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v2
+
+      - name: Run Tests
+        run: go test ./...
+
+      - name: Set up Go 1.19.4
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.19.4
+  building:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v2
+
+      - name: Set up Go 1.19.4
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.19.4
