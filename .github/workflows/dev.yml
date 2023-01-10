@@ -64,8 +64,7 @@ jobs:
 
       - name: Setup GO environment
         run: |
-          go mod download 
-          go get -t .
+          go mod download
 
       - name: Vet
         run: |
